@@ -1,0 +1,110 @@
+
+DETAIL ACTIVITY
+JAVA file :
+package com.gstbilling;
+import android.content.ContentValues; import android.content.Context;
+import android.content.DialogInterface; import android.content.Intent;
+import android.database.Cursor; import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable; import android.net.Uri;
+import android.os.Bundle;
+import android.os.PersistableBundle;
+import android.preference.PreferenceManager; import android.support.v4.app.LoaderManager; import android.support.v4.content.CursorLoader; import android.support.v4.content.Loader; import android.support.v7.app.ActionBar; import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity; import android.support.v7.widget.LinearLayoutManager; import android.text.InputType;
+import android.text.method.PasswordTransformationMethod;
+import android.view.Menu; import android.widget.TextView;
+import com.taneja.ajay.gstbilling.data.GSTBillingContract; import com.taneja.ajay.gstbilling.utils.NumberToWord; public
+class DetailActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor>
+{
+private static final int DETAIL_LOADER_ID = 44;private static final int ACTION_MARK_AS_PAID_ID = 400;
+private static final int ACTION_DELETE_BILL_ID = 401;
+private static final int ACTION_ADD_MORE_ITEMS_ID = 402;static final
+String ADDING_MORE_ITEMS = "adding-more-items-to-bill";
+static final String EDITING_IaTEM = "editing-existing-item"; private RecyclerView detailRecyclerView;
+private DetailAdapter adapter; private static String billId; private String phoneNumber; private String customerName;
+private static TextView totalGstTv;
+private static TextView totalAmountTv;
+private static TextView totalAmountInWordsTv;
+private static String inr; private int itemCount;
+public static final String ITEM_COUNT_KEY = "items-count-in-bill"; private static ActionBar detailActionBar;
+private static Intent getDetailIntent;
+
+@Override
+protected void onCreate(Bundle savedInstanceState) { super.onCreate(savedInstanceState); setContentView(R.layout.activity_detail);
+
+getDetailIntent = getIntent();
+billId = getDetailIntent.getStringExtra(GSTBillingContract.GSTBillingEntry._ID);
+
+
+if(getDetailIntent.hasExtra(GSTBillingContract.GSTBillingEntry.PRIMARY_COLUMN_STATUS
+)){
+billStatus = getDetailIntent.getStringExtra(GSTBillingContract.GSTBillingEntry.PRIMARY_CO LUMN_STATUS);
+}
+
+if(billStatus.equals(GSTBillingContract.BILL_STATUS_PAID)){ detailActionBar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#00C853")));
+}else {
+detailActionBar.setBackgroundDrawable(new ColorDrawable(Color.RED));
+}
+if(getDetailIntent.hasExtra(GSTBillingContract.GSTBillingEntry.PRIMARY_COLUMN_NAME)){ customerName = getDetailIntent.getStringExtra(GSTBillingContract.GSTBillingEntry.PRIMAR
+Y_COLUMN_NAME);
+detailActionBar.setTitle(customerName);
+}
+public static void changeBillStatus(){
+billStatus = GSTBillingContract.BILL_STATUS_UNPAID; detailActionBar.setBackgroundDrawable(new ColorDrawable(Color.RED)); getDetailIntent.putExtra(GSTBillingContract.GSTBillingEntry.PRIMARY_COLUMN_STATUS,
+billStatus);
+}
+private void addMoreItems() {
+Intent addIntent = new Intent(this, NewBillActivity.class); addIntent.putExtra(ADDING_MORE_ITEMS, true); addIntent.putExtra(GSTBillingContract.GSTBillingEntry._ID, billId); addIntent.putExtra(GSTBillingContract.GSTBillingEntry.PRIMARY_COLUMN_NAME,
+customerName);
+addIntent.putExtra(GSTBillingContract.GSTBillingEntry.PRIMARY_COLUMN_PHONE_NUMB ER, phoneNumber);
+startActivity(addIntent);
+}
+
+public static void editItem(final Context context, final int id, final String itemDescription, final float finalPrice, final int quantity){
+
+final EditText passwordInput = new EditText(context);
+passwordInput.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATI ON_PASSWORD);
+passwordInput.setTransformationMethod(PasswordTransformationMethod.getInstance()); passwordInput.setHint(R.string.enter_password_dialog_hint); passwordInput.setHintTextColor(Color.LTGRAY);
+new AlertDialog.Builder(context)
+.setTitle(context.getString(R.string.action_edit_bill_item_label))
+.setView(passwordInput)
+.setPositiveButton(context.getString(R.string.enter_password_dialog_ok), new DialogInterface.OnClickListener() {
+@Override
+public void onClick(DialogInterface dialog, int which) { String password = passwordInput.getText().toString();
+String savedPassword = PreferenceManager.getDefaultSharedPreferences(context)
+.getString(SetupPasswordActivity.SETUP_PASSWORD_KEY, null); Toast.makeText(context, context.getString(R.string.invalid_password_error),
+Toast.LENGTH_LONG).show();
+}
+}
+})
+.setNegativeButton(context.getString(R.string.enter_password_dialog_cancel), new DialogInterface.OnClickListener() {
+@Override
+public void onClick(DialogInterface dialog, int which) {
+
+}
+})
+.show();
+
+}
+@Override
+public Loader<Cursor> onCreateLoader(int id, Bundle args) { return new CursorLoader(
+this, GSTBillingContract.GSTBillingEntry.CONTENT_URI.buildUpon().appendPath(billId).build(
+),
+null, null, null, null
+);
+}
+
+@Override
+public void onLoadFinished(Loader<Cursor> loader, Cursor data) { adapter.swapCursor(data);
+itemCount = data.getCount();
+}
+
+@Override
+public void onLoaderReset(Loader<Cursor> loader) { adapter.swapCursor(null);
+itemCount = 0;
+}
+
+public static void changeBillStatus(){
+billStatus = GSTBillingContract.BILL_STATUS_UNPAID; detailActionBar.setBackgroundDrawable(new ColorDrawable(Color.RED)); getDetailIntent.putExtra(GSTBillingContract.GSTBillingEntry.PRIMARY_COLUMN_STATUS,
+billStatus);
+}
+}
